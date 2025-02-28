@@ -1,5 +1,6 @@
 {
   "stork": {
+    "baseURL": "https://app-api.jp.stork-oracle.network/v1",
     "intervalSeconds": 5
   },
   "threads": {
