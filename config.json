@@ -1,8 +1,22 @@
 {
+  "accounts": [
+    {
+      "email": "xyz@example.com",
+      "password": "yourpassword",
+      "userPoolId": "ap-northeast-1_M22I44OpC",
+      "clientId": "5msns4n49hmg3dftp2tp1t2iuh"
+    },
+    {
+      "email": "seconduser@example.com",
+      "password": "secondpassword",
+      "userPoolId": "ap-northeast-1_M22I44OpC",
+      "clientId": "5msns4n49hmg3dftp2tp1t2iuh"
+    }
+  ],
   "stork": {
     "intervalSeconds": 5
   },
   "threads": {
-    "maxWorkers": 3
+    "maxWorkers": 1
   }
 }
