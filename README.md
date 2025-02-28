@@ -43,22 +43,24 @@ npm install
 
 The bot now uses a config.json file for configuration. When you run the bot for the first time, it will create a default config.json file that you can edit.
 
-1. Run the bot once to generate the default config file:
-```
-node index.js
-```
+1. Replace `username` and `password` in accounts.json file with your Stork Oracle account credentials
 
-2. Edit the generated `config.json` file with your credentials:
-   Refer the format from config.json
+```
+[
+  {
+    "email": "user1@example.com",
+    "password": "password123"
+  },
+  {
+    "email": "user2@example.com",
+    "password": "password456"
+  }
+]
 
-3. Replace `username` and `password` with your Stork Oracle account credentials
+```
 
 ### Optional: Proxy Configuration
-
-To use proxy servers for distribution of requests:
-
-1. Create a `proxies.txt` file in the project root
-2. Add one proxy per line in any of these formats:
+1. Add one proxy per line in any of these formats:
    - HTTP proxies: `http://user:pass@host:port`
    - SOCKS proxies: `socks5://user:pass@host:port`
 
@@ -66,7 +68,7 @@ To use proxy servers for distribution of requests:
 
 Start the bot with:
 ```
-node stork-bot.js
+node index.js
 ```
 
 The bot will:
