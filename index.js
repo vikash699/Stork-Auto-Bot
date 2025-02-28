@@ -14,7 +14,7 @@ const accountsPath = path.join(__dirname, 'accounts.json');
 const proxiesPath = path.join(__dirname, 'proxies.txt');
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
+const accounts = JSON.parse(fs.readFileSync(__dirname + '/accounts.json', 'utf8'));
 const proxies = fs.existsSync(proxiesPath) ? fs.readFileSync(proxiesPath, 'utf8').split('\n').filter(line => line.trim() !== '') : [];
 
 function getProxyAgent(proxy) {
