@@ -45,7 +45,7 @@ The bot now uses a config.json file for configuration. When you run the bot for 
 
 1. Run the bot once to generate the default config file:
 ```
-node stork-bot.js
+node index.js
 ```
 
 2. Edit the generated `config.json` file with your credentials:
