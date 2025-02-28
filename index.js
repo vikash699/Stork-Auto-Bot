@@ -8,13 +8,13 @@ const axios = require('axios');
 
 global.navigator = { userAgent: 'node' };
 
-// Load configuration
+// Load configuration & accounts
 const configPath = path.join(__dirname, 'config.json');
 const accountsPath = path.join(__dirname, 'accounts.json');
 const proxiesPath = path.join(__dirname, 'proxies.txt');
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const accounts = JSON.parse(fs.readFileSync(__dirname + '/accounts.json', 'utf8'));
+const accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8')).accounts;
 const proxies = fs.existsSync(proxiesPath) ? fs.readFileSync(proxiesPath, 'utf8').split('\n').filter(line => line.trim() !== '') : [];
 
 function getProxyAgent(proxy) {
@@ -25,12 +25,26 @@ function getProxyAgent(proxy) {
 }
 
 class CognitoAuth {
-    constructor(username, password) {
-        this.username = username;
-        this.password = password;
-        this.authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: username, Password: password });
-        this.cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: username, Pool: new AmazonCognitoIdentity.CognitoUserPool({ UserPoolId: config.cognito.userPoolId, ClientId: config.cognito.clientId }) });
+    constructor(account) {
+        this.username = account.email;
+        this.password = account.password;
+        this.userPoolId = account.userPoolId;
+        this.clientId = account.clientId;
+
+        this.authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+            Username: this.username,
+            Password: this.password
+        });
+
+        this.cognitoUser = new AmazonCognitoIdentity.CognitoUser({
+            Username: this.username,
+            Pool: new AmazonCognitoIdentity.CognitoUserPool({
+                UserPoolId: this.userPoolId,
+                ClientId: this.clientId
+            })
+        });
     }
+
     authenticate() {
         return new Promise((resolve, reject) => {
             this.cognitoUser.authenticateUser(this.authenticationDetails, {
@@ -47,27 +61,29 @@ class CognitoAuth {
 
 async function validateAccount(account, proxy) {
     try {
-        const auth = new CognitoAuth(account.email, account.password);
+        const auth = new CognitoAuth(account);
         const tokens = await auth.authenticate();
-        console.log(`Successfully authenticated ${account.email}`);
+        console.log(`✅ Successfully authenticated ${account.email}`);
 
         const response = await axios.get(`${config.stork.baseURL}/me`, {
             headers: { 'Authorization': `Bearer ${tokens.accessToken}` },
             httpsAgent: getProxyAgent(proxy)
         });
 
-        console.log(`User Stats for ${account.email}:`, response.data);
+        console.log(`📊 User Stats for ${account.email}:`, response.data);
     } catch (error) {
-        console.error(`Error validating ${account.email}:`, error.message);
+        console.error(`❌ Error validating ${account.email}:`, error.message);
     }
 }
 
 async function runAllAccounts() {
-    for (let i = 0; i < accounts.length; i++) {
-        const account = accounts[i];
-        const proxy = proxies.length > 0 ? proxies[i % proxies.length] : null;
-        await validateAccount(account, proxy);
-    }
+    const tasks = accounts.map((account, index) => {
+        const proxy = proxies.length > 0 ? proxies[index % proxies.length] : null;
+        return validateAccount(account, proxy);
+    });
+
+    await Promise.all(tasks);
+    console.log("🎉 All accounts processed!");
 }
 
 if (isMainThread) {
