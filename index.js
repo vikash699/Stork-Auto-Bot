@@ -1,57 +1,77 @@
 const fs = require('fs');
 const path = require('path');
-const { Worker, isMainThread } = require('worker_threads');
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const { SocksProxyAgent } = require('socks-proxy-agent');
+const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
+const axios = require('axios');
 
-// Utility function to load JSON files
-function loadJSON(filename) {
-  try {
-    const filepath = path.join(__dirname, filename);
-    if (!fs.existsSync(filepath)) {
-      throw new Error(`${filename} not found.`);
+global.navigator = { userAgent: 'node' };
+
+// Load configuration
+const configPath = path.join(__dirname, 'config.json');
+const accountsPath = path.join(__dirname, 'accounts.json');
+const proxiesPath = path.join(__dirname, 'proxies.txt');
+
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
+const proxies = fs.existsSync(proxiesPath) ? fs.readFileSync(proxiesPath, 'utf8').split('\n').filter(line => line.trim() !== '') : [];
+
+function getProxyAgent(proxy) {
+    if (!proxy) return null;
+    if (proxy.startsWith('http')) return new HttpsProxyAgent(proxy);
+    if (proxy.startsWith('socks4') || proxy.startsWith('socks5')) return new SocksProxyAgent(proxy);
+    return null;
+}
+
+class CognitoAuth {
+    constructor(username, password) {
+        this.username = username;
+        this.password = password;
+        this.authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: username, Password: password });
+        this.cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: username, Pool: new AmazonCognitoIdentity.CognitoUserPool({ UserPoolId: config.cognito.userPoolId, ClientId: config.cognito.clientId }) });
     }
-    return JSON.parse(fs.readFileSync(filepath, 'utf8'));
-  } catch (error) {
-    console.error(`Error loading ${filename}:`, error.message);
-    process.exit(1);
-  }
+    authenticate() {
+        return new Promise((resolve, reject) => {
+            this.cognitoUser.authenticateUser(this.authenticationDetails, {
+                onSuccess: (result) => resolve({
+                    accessToken: result.getAccessToken().getJwtToken(),
+                    idToken: result.getIdToken().getJwtToken(),
+                    refreshToken: result.getRefreshToken().getToken()
+                }),
+                onFailure: reject
+            });
+        });
+    }
 }
 
-// Load configurations
-const config = loadJSON('config.json');
-const accounts = loadJSON('accounts.json');
-const proxies = loadJSON('proxies.json');
+async function validateAccount(account, proxy) {
+    try {
+        const auth = new CognitoAuth(account.email, account.password);
+        const tokens = await auth.authenticate();
+        console.log(`Successfully authenticated ${account.email}`);
 
-console.log(`Loaded ${accounts.length} accounts and ${proxies.length} proxies.`);
+        const response = await axios.get(`${config.stork.baseURL}/me`, {
+            headers: { 'Authorization': `Bearer ${tokens.accessToken}` },
+            httpsAgent: getProxyAgent(proxy)
+        });
 
-// Function to get a proxy for an account
-function getProxy(index) {
-  if (proxies.length === 0) return null;
-  return proxies[index % proxies.length]; // Rotate proxies
+        console.log(`User Stats for ${account.email}:`, response.data);
+    } catch (error) {
+        console.error(`Error validating ${account.email}:`, error.message);
+    }
 }
 
-// Worker function to run each account independently
-function runWorker(account, proxy) {
-  return new Promise((resolve) => {
-    const worker = new Worker('./worker.js', { workerData: { account, proxy } });
-    worker.on('message', resolve);
-    worker.on('error', (error) => resolve({ success: false, error: error.message }));
-    worker.on('exit', () => resolve({ success: false, error: 'Worker exited' }));
-  });
+async function runAllAccounts() {
+    for (let i = 0; i < accounts.length; i++) {
+        const account = accounts[i];
+        const proxy = proxies.length > 0 ? proxies[i % proxies.length] : null;
+        await validateAccount(account, proxy);
+    }
 }
 
-// Main function to start multiple workers
-async function main() {
-  if (isMainThread) {
-    console.log("Starting multi-account bot...");
-
-    const workers = accounts.map((account, index) => {
-      const proxy = getProxy(index);
-      return runWorker(account, proxy);
-    });
-
-    const results = await Promise.all(workers);
-    console.log("All accounts processed:", results);
-  }
+if (isMainThread) {
+    runAllAccounts();
+} else {
+    validateAccount(workerData.account, workerData.proxy);
 }
-
-main();
