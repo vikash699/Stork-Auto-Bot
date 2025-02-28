@@ -1,41 +1,8 @@
-"cognitoAccounts": [
-  {
-    "username": "email1@example.com",
-    "password": "password1"
-  },
-  {
-    "username": "email2@example.com",
-    "password": "password2"
-  }
-]
-
-try this if above one not working
-
-
 {
-  "cognito": {
-    "region": "ap-northeast-1",
-    "clientId": "5msns4n49hmg3dftp2tp1t2iuh",
-    "userPoolId": "ap-northeast-1_M22I44OpC",
-    "users": [
-      {
-        "username": "user1@example.com",
-        "password": "password1"
-      },
-      {
-        "username": "user2@example.com",
-        "password": "password2"
-      },
-      {
-        "username": "user3@example.com",
-        "password": "password3"
-      }
-    ]
-  },
   "stork": {
     "intervalSeconds": 5
   },
   "threads": {
-    "maxWorkers": 1
+    "maxWorkers": 3
   }
 }
