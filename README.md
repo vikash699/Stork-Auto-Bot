@@ -22,7 +22,7 @@ Automated validation bot for the Stork Oracle network. This bot helps you automa
 
 1. Clone the repository:
 ```
-git clone https://github.com/vikash699/Stork-Auto-Bot.git
+git clone https://github.com/airdropinsiders/Stork-Auto-Bot.git
 ```
 
 2. Navigate to the project directory:
@@ -43,24 +43,28 @@ npm install
 
 The bot now uses a config.json file for configuration. When you run the bot for the first time, it will create a default config.json file that you can edit.
 
-1. Replace `username` and `password` in accounts.json file with your Stork Oracle account credentials
-
+1. Run the bot once to generate the default config file:
 ```
-[
-  {
-    "email": "user1@example.com",
-    "password": "password123"
-  },
-  {
-    "email": "user2@example.com",
-    "password": "password456"
-  }
-]
-
+node index.js
 ```
+
+2. Edit the generated `accounts.js` file with your credentials:
+```javascript
+export const accounts = [
+  { username: "email1", password: "pass1" },
+  { username: "email2", password: "pass2" }
+];
+```
+
+3. Replace `username` and `password` with your Stork Oracle account credentials.
+just add new line if you wanna run many accounts
 
 ### Optional: Proxy Configuration
-1. Add one proxy per line in any of these formats:
+
+To use proxy servers for distribution of requests:
+
+1. Create a `proxies.txt` file in the project root
+2. Add one proxy per line in any of these formats:
    - HTTP proxies: `http://user:pass@host:port`
    - SOCKS proxies: `socks5://user:pass@host:port`
 
@@ -68,7 +72,7 @@ The bot now uses a config.json file for configuration. When you run the bot for 
 
 Start the bot with:
 ```
-node index.js
+node stork-bot.js
 ```
 
 The bot will:
